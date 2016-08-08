@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"log"
 	"encoding/json"
+
+	"github.com/ivanrave/go-jwt-auth/dbauth"
 )
 
 type appHandler func(http.ResponseWriter, *http.Request) error
@@ -26,20 +28,23 @@ func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	err := initPool()
+	err := dbauth.InitPool("127.0.0.1",
+		"6379",
+		0,
+		"")
 	if err != nil {
 		log.Fatal("Redis: ", err)
 	}
 
-	err = initKeys()
-	if err != nil {
-		log.Fatal("Keys: ", err)
-	}	
+	// err = initKeys()
+	// if err != nil {
+	// 	log.Fatal("Keys: ", err)
+	// }	
 
-	err = checkKey()
-	if err != nil {
-		log.Fatal("Redis: ", err)
-	}
+	// err = checkKey()
+	// if err != nil {
+	// 	log.Fatal("Redis: ", err)
+	// }
 
 	http.Handle("/login", appHandler(routeLogin))
 	http.Handle("/code", appHandler(routeCode))
@@ -47,8 +52,10 @@ func main() {
 	
 	http.Handle("/code.html", http.FileServer(http.Dir("./static")))
 	http.Handle("/login.html", http.FileServer(http.Dir("./static")))
-	
-	err = http.ListenAndServe(":9090", nil) // set listen port
+
+	const listenPort string = ":9090"
+	fmt.Println("http://127.0.0.1" + listenPort)
+	err = http.ListenAndServe(listenPort, nil) // set listen port
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

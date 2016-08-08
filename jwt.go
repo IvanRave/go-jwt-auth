@@ -34,8 +34,8 @@ func initKeys() error {
 }
 
 func calcJWT(uid string, expires time.Time) (string, error) {
-	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
+	// Create a new token object, specifying signing method
+	// and the claims you would like it to contain.
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"uid": uid,
 		// exp = nbf
@@ -76,7 +76,7 @@ func checkJWT(inputToken string) (string, error){
 	
 	//*jwt.Token
 	token, err := jwt.Parse(inputToken, cbkJwtParse)
-	if err != nil {
+	if err != nil {		
 		return "", err
 	}
 

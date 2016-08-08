@@ -2,4 +2,4 @@
 
 go build .
 
-./rave-auth
+./go-jwt-auth

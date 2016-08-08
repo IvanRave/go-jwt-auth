@@ -1,8 +1,10 @@
 package main
 
 import (
-	"time"
+//	"time"
 	"net/http"
+
+	"github.com/ivanrave/go-jwt-auth/dbauth"
 )
 
 var (
@@ -33,35 +35,49 @@ func routeLogin (w http.ResponseWriter, r *http.Request) error {
 
 	if len(vcode) < 3 { return errVcodeRequired	}
 	
-	vcodeNeed, err := getVcode(lgn)
+	vcodeNeed, err := dbauth.GetVcode(lgn)
 
-	if err != nil {	return err }
+	if err != nil {
+		if err == dbauth.ErrLgnNotFound {
+			// return err
+			return errVcodeNotExists
+		}
+		
+		return err
+	}
 	
 	if len(vcodeNeed) < 3 {	return errVcodeNotExists }
 
-	if vcode != vcodeNeed { return errCodeMismatch }
-
-	// then: Generate JWT token
-	// send to the user as Cookie or smth else
-	expiration := time.Now().Add(24 * time.Hour)
-	
-	jwt, err := calcJWT(lgn, expiration)
-
-	if err != nil {	return err }
-
-	//time.Now().Add(time.Second * time.Duration(seconds))
-
-	// *Cookie
-	cookie := http.Cookie{
-		Name: "authtoken",
-		Value: jwt,
-		Expires: expiration,
-		//		Secure: true,
+	if vcode != vcodeNeed {
+		// add retry
+		errRetry := dbauth.AddRetry(lgn)
+		if errRetry != nil {
+			return errRetry
+		}
+		return errCodeMismatch
 	}
+
+	// // then: Generate JWT token
+	// // send to the user as Cookie or smth else
+	// expiration := time.Now().Add(24 * time.Hour)
 	
-	http.SetCookie(w, &cookie)
+	// jwt, err := calcJWT(lgn, expiration)
+
+	// if err != nil {	return err }
+
+	// //time.Now().Add(time.Second * time.Duration(seconds))
+
+	// // *Cookie
+	// cookie := http.Cookie{
+	// 	Name: "authtoken",
+	// 	Value: jwt,
+	// 	Expires: expiration,
+	// 	//		Secure: true,
+	// }
 	
-	//fmt.Fprintf(w, jwt)
-	http.Redirect(w, r, "./", 302)
+	// http.SetCookie(w, &cookie)
+	
+	// //fmt.Fprintf(w, jwt)
+	// http.Redirect(w, r, "./", 302)
 	return nil
 }

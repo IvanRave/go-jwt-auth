@@ -1,5 +1,10 @@
 # JWT authentication without passwords
 
+## Run
+
+./run-docker-redis.sh
+./run-app.sh
+
 ## Steps
 
 1. Enter a email or phone number to code.html

@@ -4,7 +4,7 @@
 VRSN=3.2.2
 CNTR=dredis
 
-# git pull redis:$VRSN
+# docker pull redis:$VRSN
 
 docker stop $CNTR || true
 docker rm $CNTR || true
@@ -16,3 +16,8 @@ docker run \
        redis:$VRSN
 
 docker logs -f $CNTR
+
+# docker will be running with temporary storage
+# use it for temporary data with expiration time, like
+# - auth verification codes
+# - cache requests

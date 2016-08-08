@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"github.com/ivanrave/go-jwt-auth/dbauth"
 )
 	
 var (
@@ -18,19 +19,24 @@ func routeCode(w http.ResponseWriter, r *http.Request) error {
 	// generate a verification code
 	vcode := generateToken(5)
 	
-	// validate login: email or phone number regexp
-	
+	// validate on db level: login + email or phone number regexp
 	// save it in Redis
-	saved, err := setLoginAndCode(lgn, vcode)
+	err := dbauth.SetLoginAndVcode(lgn, vcode, 90)
 
 	if err != nil {
-		// server error
-		return err
-	}
-
-	if saved == false {
-		// client error
-		return errTokenAlreadyExists
+		switch (err){
+			// client error
+		case dbauth.ErrLgnExists:
+			return errTokenAlreadyExists
+		case dbauth.ErrLgnInvalid:
+			return apiError{
+				Code: "BadRequest",
+				Description: dbauth.ErrLgnInvalid.Error(),
+			}
+			// server error
+		default:
+			return err
+		}
 	}
 
 	http.Redirect(w, r, "./login.html?vcode=" + vcode, 302)	
