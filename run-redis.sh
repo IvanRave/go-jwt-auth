@@ -11,6 +11,7 @@ docker rm $CNTR || true
 
 docker run \
        --name $CNTR \
+       --restart "always" \
        -p 6379:6379 \
        -d \
        redis:$VRSN

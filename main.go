@@ -36,10 +36,10 @@ func main() {
 		log.Fatal("Redis: ", err)
 	}
 
-	// err = initKeys()
-	// if err != nil {
-	// 	log.Fatal("Keys: ", err)
-	// }	
+	err = initKeys()
+	if err != nil {
+		log.Fatal("Keys: ", err)
+	}
 
 	// err = checkKey()
 	// if err != nil {

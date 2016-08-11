@@ -9,7 +9,7 @@ import (
 var (
 	errNotAuthorized = apiError{
 		Code: "NotAuthorized",
-		Description: "Go to a login page",
+		Description: "Go to a /code.html page",
 	}
 )
 

@@ -3,9 +3,10 @@
 package dbauth
 
 import (
-	"fmt"
+	//	"fmt"
 	"time"
 	"errors"
+	"strconv"
 	"gopkg.in/redis.v4"
 )
 
@@ -50,9 +51,9 @@ func SetLoginAndVcode(lgn string,
 
 	if len(vcode) < 3 { return ErrVcodeInvalid	}
 
-	if seconds < 5 { return ErrSecondsInvalid }
+	if seconds < 1 { return ErrSecondsInvalid }
 
-	fmt.Println("saving", lgn, vcode, seconds)
+	//fmt.Println("saving", lgn, vcode, seconds)
 	// NX = not exists
 	// http://redis.io/commands/hsetnx
 	// *StatusCmd = http://redis.io/topics/protocol#simple-string-reply
@@ -83,34 +84,46 @@ func SetLoginAndVcode(lgn string,
 
 // Add retry to check verification code
 // http://redis.io/commands/HINCRBY
-// If key does not exist, a new key holding a hash is created.
-// If field does not exist the value is set to 0 before the operation is performed.
+// By default HINCRBY:
+// - If key does not exist, a new key holding a hash is created.
+// - If field does not exist the value is set to 0 before the operation is performed.
+// Using EVAL:
+// - Verify key existence
+// - Increments only if a key exists
 func AddRetry(lgn string) (error) {
-	fmt.Println("AddRetry", lgn)
+
+	scr := `
+local exists = redis.call('EXISTS', KEYS[1]);
+if (exists == 1) then
+return redis.call('HINCRBY', KEYS[1], 'retry', 1);
+else 
+return 0;
+end;
+exists = nil;`
+	
+	r, err := pool.Eval(scr, []string{lgn}).Result()
+
 	// *IntCmd
 	// the value at field after the increment operation
 	// for a first try: 0 + 1 = 1
 	// 2nd try: "2"
 	// 3rd try: "3"
-	_, err := pool.HIncrBy(lgn, "retry", 1).Result()
+	//_, err := pool.HIncrBy(lgn, "retry", 1).Result()
+	
 	if err != nil { return err }
 
-	// if num == 0 {
-	// 	// a key (lgn) doesnt exists
-	// 	// - it can be expired already
-	// 	// - or removed by concurrent request
-	// 	// need to remove this key
-	// 	err = DelKey(lgn)
-	// 	if err != nil { return err }
-	// }
+	if r.(int64) == 0 {
+		return ErrLgnNotFound
+	}
 
-	// 1, 2, 3 ...
 	return nil
 }
 
 // GetVcode by email/phone
 // Returns empty string if not found or empty string
-func GetVcode(lgn string) (string, error) {
+func GetVcode(lgn string) (string, int, error) {
+	vcode := ""
+	retry := 0
 
 	// *SliceCmd
 	// []interface{}
@@ -121,7 +134,7 @@ func GetVcode(lgn string) (string, error) {
 	// 2) (nil)
 
 	if err != nil{
-		return "", err
+		return vcode, retry, err
 		// if err == redis.Nil {
 		// 	// return empty string			
 		// 	return "", nil
@@ -135,21 +148,25 @@ func GetVcode(lgn string) (string, error) {
 	// For every field that does not exist in the hash, a nil value is returned. Because a non-existing keys are treated as empty hashes, running HMGET against a non-existing key will return a list of nil values
 
 	if arr[0] == nil {
-		return "", ErrLgnNotFound
+		return vcode, retry, ErrLgnNotFound
 	}
 	
-	vcode := arr[0].(string)
+	vcode = arr[0].(string)
 
-	var retry string
+	var retryStr string
 	if arr[1] == nil {
-		retry = "no"
+		retryStr = "0"
 	} else {
-		retry = arr[1].(string)
+		retryStr = arr[1].(string)
 	}
 
-	fmt.Println("vcode", vcode, retry)
+	retry, errConv := strconv.Atoi(retryStr)
+
+	if errConv != nil { return vcode, retry, errConv }
 	
-	return vcode, nil
+	//fmt.Println("vcode", vcode, retry)
+	
+	return vcode, retry, nil
 }
 
 // Del deletes a one key from a storage
