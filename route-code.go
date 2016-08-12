@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"github.com/ivanrave/go-jwt-auth/dbauth"
+	"github.com/ivanrave/goreth"
 )
 	
 var (
@@ -21,17 +21,17 @@ func routeCode(w http.ResponseWriter, r *http.Request) error {
 	
 	// validate on db level: login + email or phone number regexp
 	// save it in Redis
-	err := dbauth.SetLoginAndVcode(lgn, vcode, 90)
+	err := goreth.SetLoginAndVcode(lgn, vcode, 90)
 
 	if err != nil {
 		switch (err){
 			// client error
-		case dbauth.ErrLgnExists:
+		case goreth.ErrLgnExists:
 			return errTokenAlreadyExists
-		case dbauth.ErrLgnInvalid:
+		case goreth.ErrLgnInvalid:
 			return apiError{
 				Code: "BadRequest",
-				Description: dbauth.ErrLgnInvalid.Error(),
+				Description: goreth.ErrLgnInvalid.Error(),
 			}
 			// server error
 		default:

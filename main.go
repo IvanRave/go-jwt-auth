@@ -6,7 +6,7 @@ import (
 	"log"
 	"encoding/json"
 
-	"github.com/ivanrave/go-jwt-auth/dbauth"
+	"github.com/ivanrave/goreth"
 )
 
 type appHandler func(http.ResponseWriter, *http.Request) error
@@ -28,7 +28,7 @@ func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	err := dbauth.InitPool("127.0.0.1",
+	err := goreth.InitPool("127.0.0.1",
 		"6379",
 		0,
 		"")

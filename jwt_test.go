@@ -12,7 +12,7 @@ func ExampleCalcJWT() {
 		log.Fatal(err)
 		return
 	}
-	expiration := time.Now().Add(-1 * time.Hour)
+	expiration := time.Now().Add(1 * time.Hour)
 	//.Add(24 * time.Hour)
 	authToken, err := calcJWT("qwerty", expiration)
 
